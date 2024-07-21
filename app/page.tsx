@@ -1,42 +1,68 @@
 "use client";
 
+import { useState } from "react";
+import { PlusCircleIcon, TrashIcon } from "@heroicons/react/20/solid";
 import Checkbox from "@/components/Checkbox";
 import FormInput from "@/components/FormInput";
 import Summary from "@/components/Summary";
-import { useState } from "react";
-import { PlusCircleIcon, TrashIcon } from "@heroicons/react/20/solid";
 
 type DownpaymentTerm = {
   downpayment: string;
   payableIn: string;
 };
 
+type FormFields = {
+  listPrice: string;
+  discounts: string[];
+  vatToggle: boolean;
+  additionalCharges: string;
+  downpaymentTerms: DownpaymentTerm[];
+  reservation: string;
+};
+
 export default function Home() {
-  const [listPrice, setListPrice] = useState("");
-  const [discounts, setDiscounts] = useState([""]);
-  const [vatToggle, setVatToggle] = useState(false);
-  const [additionalCharges, setAdditionalCharges] = useState("");
-  const [downpaymentTerms, setDownpaymentTerms] = useState<DownpaymentTerm[]>([
-    { downpayment: "", payableIn: "" },
-  ]);
-  const [reservation, setReservation] = useState("");
-  const [output, setOutput] = useState("");
+  const [formFields, setFormFields] = useState<FormFields>({
+    listPrice: "",
+    discounts: [""],
+    vatToggle: false,
+    additionalCharges: "",
+    downpaymentTerms: [{ downpayment: "", payableIn: "" }],
+    reservation: "",
+  });
+  const [output, setOutput] = useState<string>("");
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = event.target;
+    setFormFields((prevFields) => ({
+      ...prevFields,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
 
   const handleDiscountChange = (index: number, value: string) => {
-    const newDiscounts = [...discounts];
+    const newDiscounts = [...formFields.discounts];
     newDiscounts[index] = value;
-    setDiscounts(newDiscounts);
+    setFormFields((prevFields) => ({
+      ...prevFields,
+      discounts: newDiscounts,
+    }));
   };
 
   const addDiscount = () => {
-    if (discounts.length < 3) {
-      setDiscounts([...discounts, ""]);
+    if (formFields.discounts.length < 3) {
+      setFormFields((prevFields) => ({
+        ...prevFields,
+        discounts: [...prevFields.discounts, ""],
+      }));
     }
   };
 
   const removeDiscount = (index: number) => {
-    const newDiscounts = discounts.filter((_, i) => i !== index);
-    setDiscounts(newDiscounts);
+    const newDiscounts = formFields.discounts.filter((_, i) => i !== index);
+    setFormFields((prevFields) => ({
+      ...prevFields,
+      discounts: newDiscounts,
+    }));
   };
 
   const handleDownpaymentChange = (
@@ -44,30 +70,39 @@ export default function Home() {
     field: keyof DownpaymentTerm,
     value: string
   ) => {
-    const newDownpaymentTerms = [...downpaymentTerms];
-    newDownpaymentTerms[index] = {
-      ...newDownpaymentTerms[index],
-      [field]: value,
-    };
-    setDownpaymentTerms(newDownpaymentTerms);
+    const newDownpaymentTerms = [...formFields.downpaymentTerms];
+    newDownpaymentTerms[index][field] = value;
+    setFormFields((prevFields) => ({
+      ...prevFields,
+      downpaymentTerms: newDownpaymentTerms,
+    }));
   };
 
   const addDownpaymentTerm = () => {
-    if (downpaymentTerms.length < 3) {
-      setDownpaymentTerms([
-        ...downpaymentTerms,
-        { downpayment: "", payableIn: "" },
-      ]);
+    if (formFields.downpaymentTerms.length < 3) {
+      setFormFields((prevFields) => ({
+        ...prevFields,
+        downpaymentTerms: [
+          ...prevFields.downpaymentTerms,
+          { downpayment: "", payableIn: "" },
+        ],
+      }));
     }
   };
 
   const removeDownpaymentTerm = (index: number) => {
-    const newDownpaymentTerms = downpaymentTerms.filter((_, i) => i !== index);
-    setDownpaymentTerms(newDownpaymentTerms);
+    const newDownpaymentTerms = formFields.downpaymentTerms.filter(
+      (_, i) => i !== index
+    );
+    setFormFields((prevFields) => ({
+      ...prevFields,
+      downpaymentTerms: newDownpaymentTerms,
+    }));
   };
 
-  const calculateDetails = () => {
-    let tempListPrice = parseFloat(listPrice);
+  const calculateDetails = (event: React.FormEvent) => {
+    event.preventDefault();
+    let tempListPrice = parseFloat(formFields.listPrice);
 
     if (isNaN(tempListPrice)) {
       alert("Please enter a valid number for List Price.");
@@ -76,7 +111,7 @@ export default function Home() {
 
     let outputHTML = "";
 
-    discounts.forEach((discount, i) => {
+    formFields.discounts.forEach((discount, i) => {
       let discountValue = parseFloat(discount) || 0;
 
       let discountedPrice = tempListPrice * (1 - discountValue / 100);
@@ -104,9 +139,9 @@ export default function Home() {
     let vatAmount = 0;
     let additionalChargesAmount = 0;
 
-    if (vatToggle) {
+    if (formFields.vatToggle) {
       let vat = 8;
-      let additionalChargesValue = parseFloat(additionalCharges);
+      let additionalChargesValue = parseFloat(formFields.additionalCharges);
 
       if (isNaN(vat) || isNaN(additionalChargesValue)) {
         alert("Please enter valid numbers for VAT and Additional Charges.");
@@ -143,7 +178,7 @@ export default function Home() {
 
     let netDownpayment = 0;
 
-    downpaymentTerms.forEach((term, i) => {
+    formFields.downpaymentTerms.forEach((term, i) => {
       let downpaymentValue = parseFloat(term.downpayment) || 0;
       let payableInValue = parseFloat(term.payableIn) || 0;
 
@@ -170,7 +205,7 @@ export default function Home() {
       `;
     });
 
-    netDownpayment -= parseFloat(reservation) || 0;
+    netDownpayment -= parseFloat(formFields.reservation) || 0;
 
     outputHTML += `
       <div class="border-b py-2">
@@ -183,7 +218,7 @@ export default function Home() {
 
     let remainingDp =
       100 -
-      downpaymentTerms.reduce(
+      formFields.downpaymentTerms.reduce(
         (acc, term) => acc + (parseFloat(term.downpayment) || 0),
         0
       );
@@ -204,18 +239,22 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8">
+      <form
+        className="bg-white p-8 rounded-lg shadow-md w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8"
+        onSubmit={calculateDetails}
+      >
         <div>
           <h1 className="text-2xl font-bold mb-6 text-gray-800">
-            Payment Term Calculator
+            Payment Term Generator
           </h1>
           <div className="mb-1">
             <FormInput
               label="List Price"
+              name="listPrice"
               type="number"
               placeholder="Enter list price"
-              value={listPrice}
-              onChange={(e) => setListPrice(e.target.value)}
+              value={formFields.listPrice}
+              onChange={handleChange}
             />
           </div>
 
@@ -224,8 +263,9 @@ export default function Home() {
           <div className="mb-4">
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-lg font-semibold text-gray-800">Discounts</h2>
-              {discounts.length < 3 && (
+              {formFields.discounts.length < 3 && (
                 <button
+                  type="button"
                   className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
                   onClick={addDiscount}
                 >
@@ -233,11 +273,12 @@ export default function Home() {
                 </button>
               )}
             </div>
-            {discounts.map((discount, index) => (
+            {formFields.discounts.map((discount, index) => (
               <div key={index} className="flex items-center mb-4 w-full">
                 <div className="flex-grow">
                   <FormInput
                     label={`Discount ${index + 1}`}
+                    name={`discounts.${index}`}
                     type="number"
                     placeholder="Enter discount percentage"
                     value={discount}
@@ -247,6 +288,7 @@ export default function Home() {
                   />
                 </div>
                 <button
+                  type="button"
                   className="ml-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
                   onClick={() => removeDiscount(index)}
                 >
@@ -263,8 +305,9 @@ export default function Home() {
               <h2 className="text-lg font-semibold text-gray-800">
                 Downpayment Terms
               </h2>
-              {downpaymentTerms.length < 3 && (
+              {formFields.downpaymentTerms.length < 3 && (
                 <button
+                  type="button"
                   className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600"
                   onClick={addDownpaymentTerm}
                 >
@@ -272,11 +315,12 @@ export default function Home() {
                 </button>
               )}
             </div>
-            {downpaymentTerms.map((term, index) => (
+            {formFields.downpaymentTerms.map((term, index) => (
               <div key={index} className="flex items-center mb-4 w-full">
                 <div className="flex-grow mr-2">
                   <FormInput
                     label={`Downpayment ${index + 1}`}
+                    name={`downpaymentTerms.${index}.downpayment`}
                     type="number"
                     placeholder="Enter downpayment percentage"
                     value={term.downpayment}
@@ -292,6 +336,7 @@ export default function Home() {
                 <div className="flex-grow">
                   <FormInput
                     label={`Payable in ${index + 1}`}
+                    name={`downpaymentTerms.${index}.payableIn`}
                     type="number"
                     placeholder="Enter payable months"
                     value={term.payableIn}
@@ -305,6 +350,7 @@ export default function Home() {
                   />
                 </div>
                 <button
+                  type="button"
                   className="ml-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
                   onClick={() => removeDownpaymentTerm(index)}
                 >
@@ -316,46 +362,51 @@ export default function Home() {
 
           <hr className="mb-6 border-gray-300" />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormInput
-              label="Additional Charges (%)"
-              type="number"
-              placeholder="Enter additional charges percentage"
-              value={additionalCharges}
-              onChange={(e) => setAdditionalCharges(e.target.value)}
+          <div className="flex items-center">
+            <Checkbox
+              name="vatToggle"
+              label="Include VAT (8%)"
+              checked={formFields.vatToggle}
+              onChange={handleChange}
             />
-            <FormInput
-              label="Reservation"
-              type="number"
-              placeholder="Enter reservation fee"
-              value={reservation}
-              onChange={(e) => setReservation(e.target.value)}
-            />
+
+            <small className="ml-2 text-gray-500 w-7/12">
+              This is automatic VAT. Computed automatically Computed
+              automatically Computed automatically.
+            </small>
           </div>
 
           <hr className="mb-6 border-gray-300" />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center">
-              <Checkbox
-                label="Include VAT"
-                checked={vatToggle}
-                onChange={(e) => setVatToggle(e.target.checked)}
-              />
-              <span className="ml-2 text-gray-800">(8%)</span>
-            </div>
+            <FormInput
+              label="Additional Charges (%)"
+              name="additionalCharges"
+              type="number"
+              placeholder="Enter additional charges percentage"
+              value={formFields.additionalCharges}
+              onChange={handleChange}
+            />
+            <FormInput
+              label="Reservation"
+              name="reservation"
+              type="number"
+              placeholder="Enter reservation fee"
+              value={formFields.reservation}
+              onChange={handleChange}
+            />
           </div>
 
           <button
+            type="submit"
             className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold text-lg hover:bg-blue-600 mt-4"
-            onClick={calculateDetails}
           >
             Calculate Payment Term
           </button>
         </div>
 
         <Summary output={output} />
-      </div>
+      </form>
     </div>
   );
 }
