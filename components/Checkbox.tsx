@@ -14,7 +14,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
   onChange,
 }) => {
   return (
-    <div className="mb-4 flex items-center">
+    <div className="flex items-center">
       <input
         id={name}
         name={name}
